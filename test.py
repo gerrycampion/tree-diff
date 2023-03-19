@@ -21,7 +21,7 @@ base_values = set(all_values(base))
 compare_values = set(all_values(compare))
 pairs = pair_arrays(base_values, compare_values)
 
-# 3055, 3072
+# 3055, 61-3072, 68-3081, 63-3081
 
 # scores = diff_scores(base, compare)
 # save_to_file(scores, f"{out_dir}out.json")

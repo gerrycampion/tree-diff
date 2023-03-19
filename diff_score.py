@@ -65,50 +65,63 @@ def ngrams(text, n):
 def add_ngrams(arr, ngram_len, ngram_to_string, string_to_ngram):
     for val in arr:
         if isinstance(val, str):
-            counts = string_to_ngram.setdefault(val, ngrams(val, ngram_len))
+            counts = string_to_ngram.setdefault(
+                val,
+                {"ngrams": ngrams(val, ngram_len), "i_match": set(), "match_me": set()},
+            )["ngrams"]
             for ngram, count in counts.items():
                 ngram_to_string[ngram].update({val: count})
 
 
 def find_closest_matches(text, base_ngram_to_string, string_to_ngram):
-    compare_counts = string_to_ngram[text]
+    compare_counts = string_to_ngram[text]["ngrams"]
     scores = Counter()
     for compare_ngram, compare_count in compare_counts.items():
         for base_string, base_count in base_ngram_to_string[compare_ngram].items():
             scores.update({base_string: min(compare_count, base_count)})
-    if len(scores) == 0:
-        return set()
-    most_common = scores.most_common()
-    return set(text for text, count in most_common if count == most_common[0][1])
+    if len(scores) > 0:
+        most_common = scores.most_common()
+        top = [t for t, count in most_common if count == most_common[0][1]]
+        string_to_ngram[text]["i_match"].update(top)
+        for t in top:
+            string_to_ngram[t]["match_me"].add(text)
 
 
-# need to make this symmetric
-# need a way of removing items during this operation
-def intersections(base_to_compare, compare_to_base, base, compare, pairs, ngram_len):
-    for base_item, compare_items in list(base_to_compare.items()):
+def remove(lst, string_to_ngram, item):
+    lst.remove(item)
+    for match_me in string_to_ngram.get(item, {}).get("match_me", set()):
+        string_to_ngram.get(match_me, {}).get("i_match", set()).discard(item)
+    string_to_ngram.pop(item, None)
+
+
+# instead of checking all matches, just check match with smallest length
+def intersections(string_to_ngram, base, compare, pairs, ngram_len):
+    for base_item in list(base):
+        compare_items = string_to_ngram[base_item]["i_match"]
         if len(compare_items) > 0:
             compare_items_that_have_base = []
             compare_item_only_has_base = False
             for compare_item in compare_items:
-                base_items = compare_to_base.get(compare_item, [])
+                base_items = string_to_ngram[compare_item]["i_match"]
                 if base_item in base_items:
                     compare_items_that_have_base.append(compare_item)
                     if len(base_items) == 1:
                         compare_item_only_has_base = True
             if compare_item_only_has_base and len(compare_items_that_have_base) == 1:
+                compare_item = compare_items_that_have_base[0]
                 pairs.append(
                     {
                         "base": base_item,
-                        "comp": compare_items_that_have_base[0],
+                        "comp": compare_item,
                         #  "ngram_len": ngram_len
                     }
                 )
-                base.remove(base_item)
-                compare.remove(compare_items_that_have_base[0])
+                remove(base, string_to_ngram, base_item)
+                remove(compare, string_to_ngram, compare_item)
 
 
-def _pair_arrays(base, compare, pairs, ngram_len):
-    print("=======================")
+def _pair_arrays(base, compare, pairs, ngram_len, steps):
+    print(f"==========={steps}============")
     print(f"Ngram, Base, Compare, Pairs")
     print("Start")
     print(f"{ngram_len}, {len(base)}, {len(compare)}, {len(pairs)}")
@@ -117,15 +130,12 @@ def _pair_arrays(base, compare, pairs, ngram_len):
     compare_ngram_to_string = defaultdict(lambda: Counter())
     add_ngrams(base, ngram_len, base_ngram_to_string, string_to_ngram)
     add_ngrams(compare, ngram_len, compare_ngram_to_string, string_to_ngram)
-    compare_to_base = {
-        c: find_closest_matches(c, base_ngram_to_string, string_to_ngram)
-        for c in compare
-    }
-    base_to_compare = {
-        b: find_closest_matches(b, compare_ngram_to_string, string_to_ngram)
-        for b in base
-    }
-    intersections(base_to_compare, compare_to_base, base, compare, pairs, ngram_len)
+    for c in compare:
+        find_closest_matches(c, base_ngram_to_string, string_to_ngram)
+    for b in base:
+        find_closest_matches(b, compare_ngram_to_string, string_to_ngram)
+    intersections(string_to_ngram, base, compare, pairs, ngram_len)
+    intersections(string_to_ngram, compare, base, pairs, ngram_len)
     print("End")
     print(f"{ngram_len}, {len(base)}, {len(compare)}, {len(pairs)}")
 
@@ -140,11 +150,13 @@ def decrement(num):
 
 def pair_arrays(base, compare):
     pairs = []
-    _pair_arrays(base, compare, pairs, 0)
+    steps = 1
+    _pair_arrays(base, compare, pairs, 0, steps)
     ngram_length = decrement(max_len(base, compare))
     while ngram_length > 0:
+        steps += 1
         pairs_length = len(pairs)
-        _pair_arrays(base, compare, pairs, ngram_length)
+        _pair_arrays(base, compare, pairs, ngram_length, steps)
         if pairs_length == len(pairs):
             ngram_length = decrement(min(ngram_length, max_len(base, compare)))
     return pairs
