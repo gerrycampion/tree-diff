@@ -5,6 +5,7 @@ from diff_score import (
     all_values,
     pair_arrays,
     pair_arrays_quick_ratio,
+    diff_obj,
 )
 
 # fast fourier transforms?
@@ -17,25 +18,35 @@ out_dir = "./out/"
 base = load_from_file(base_filename)
 compare = load_from_file(compare_filename)
 
-base_values = set(all_values(base))
-compare_values = set(all_values(compare))
-pairs = pair_arrays(base_values, compare_values)
+diffs = diff_obj(base, compare)
 
-# 3055, 61-3072, 68-3081, 63-3081
+save_to_file(
+    {"diffs": diffs},
+    f"{out_dir}diffs.json",
+)
+
+
+# base_values = set(all_values(base))
+# compare_values = set(all_values(compare))
+# pairs = pair_arrays(base_values, compare_values)
+
+# save_to_file(
+#     {
+#         "pairs": sorted(
+#             [pair for pair in pairs if pair[0] != pair[1]],
+#             key=lambda pair: pair[0],
+#         ),
+#         "base": sorted([*base_values]),
+#         "comp": sorted([*compare_values]),
+#     },
+#     f"{out_dir}pairs_halves.json",
+# )
+
+
+# 3055, 61-3072, 68-3081, 63-3081, 59-3112
 
 # scores = diff_scores(base, compare)
 # save_to_file(scores, f"{out_dir}out.json")
 
-save_to_file(
-    {
-        "pairs": sorted(
-            [pair for pair in pairs if pair["base"] != pair["comp"]],
-            key=lambda pair: pair["base"],
-        ),
-        "base": sorted([*base_values]),
-        "comp": sorted([*compare_values]),
-    },
-    f"{out_dir}pairs_halves.json",
-)
 
 # pair_arrays_quick_ratio(base_values, compare_values)

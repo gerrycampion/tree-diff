@@ -2,6 +2,7 @@ from each_deep import each_deep
 from collections import defaultdict, Counter
 from itertools import product
 from difflib import SequenceMatcher
+from json import dumps
 
 
 def post_order_list(tree):
@@ -80,8 +81,10 @@ def find_closest_matches(text, base_ngram_to_string, string_to_ngram):
         for base_string, base_count in base_ngram_to_string[compare_ngram].items():
             scores.update({base_string: min(compare_count, base_count)})
     if len(scores) > 0:
-        most_common = scores.most_common()
-        top = [t for t, count in most_common if count == most_common[0][1]]
+        top = scores.most_common()
+        top = [t for t, count in top if count == top[0][1]]
+        top = sorted(top, key=len)
+        top = [t for t in top if len(t) == len(top[0])]
         string_to_ngram[text]["i_match"].update(top)
         for t in top:
             string_to_ngram[t]["match_me"].add(text)
@@ -94,7 +97,6 @@ def remove(lst, string_to_ngram, item):
     string_to_ngram.pop(item, None)
 
 
-# instead of checking all matches, just check match with smallest length
 def intersections(string_to_ngram, base, compare, pairs, ngram_len):
     for base_item in list(base):
         compare_items = string_to_ngram[base_item]["i_match"]
@@ -110,11 +112,11 @@ def intersections(string_to_ngram, base, compare, pairs, ngram_len):
             if compare_item_only_has_base and len(compare_items_that_have_base) == 1:
                 compare_item = compare_items_that_have_base[0]
                 pairs.append(
-                    {
-                        "base": base_item,
-                        "comp": compare_item,
+                    (
+                        base_item,
+                        compare_item,
                         #  "ngram_len": ngram_len
-                    }
+                    )
                 )
                 remove(base, string_to_ngram, base_item)
                 remove(compare, string_to_ngram, compare_item)
@@ -141,19 +143,20 @@ def _pair_arrays(base, compare, pairs, ngram_len, steps):
 
 
 def max_len(base, compare):
-    return max(len(text) for text in [*base, *compare])
+    return max(len(text) for text in [*base, *compare]) if base or compare else 0
 
 
 def decrement(num):
     return int(num / 2) if num > 16 else num - 1
 
 
+# TODO: lowercase all strings?
 def pair_arrays(base, compare):
     pairs = []
     steps = 1
     _pair_arrays(base, compare, pairs, 0, steps)
     ngram_length = decrement(max_len(base, compare))
-    while ngram_length > 0:
+    while ngram_length > 0 and base and compare:
         steps += 1
         pairs_length = len(pairs)
         _pair_arrays(base, compare, pairs, ngram_length, steps)
@@ -193,3 +196,105 @@ def diff_scores(base, compare):
         for node in level["base_nodes"] + level["compare_nodes"]:
             del node["node"]
     return scores
+
+
+def diff_scalar(base, compare, base_pointer, compare_pointer):
+    if base != compare:
+        return [
+            {
+                "base_pointer": base_pointer,
+                "compare_pointer": compare_pointer,
+                "type": "UPDATE",
+                "base": base,
+                "comp": compare,
+            }
+        ]
+    return []
+
+
+def diff_array(base, compare, base_pointer, compare_pointer):
+    json_to_base = {
+        dumps(item, sort_keys=True): (index, item) for (index, item) in enumerate(base)
+    }
+    json_to_compare = {
+        dumps(item, sort_keys=True): (index, item)
+        for (index, item) in enumerate(compare)
+    }
+    json_base = set(json_to_base.keys())
+    json_compare = set(json_to_compare.keys())
+    pairs = pair_arrays(json_base, json_compare)
+    deletions = [
+        {
+            "base_pointer": f"{base_pointer}/{json_to_base[item][0]}",
+            "compare_pointer": f"{compare_pointer}",
+            "type": "DELETE",
+        }
+        for item in json_base
+    ]
+    additions = [
+        {
+            "base_pointer": f"{base_pointer}",
+            "compare_pointer": f"{compare_pointer}/{json_to_compare[item][0]}",
+            "type": "ADD",
+        }
+        for item in json_compare
+    ]
+    updates = []
+    for base, comp in pairs:
+        updates.extend(
+            diff_value(
+                json_to_base[base][1],
+                json_to_compare[comp][1],
+                f"{base_pointer}/{json_to_base[base][0]}",
+                f"{compare_pointer}/{json_to_compare[comp][0]}",
+            )
+        )
+    return deletions + additions + updates
+
+
+def diff_value(base, compare, base_pointer, compare_pointer):
+    scalars = {str, int, float, bool}
+    objects = {dict}
+    arrays = {list, tuple}
+    if (
+        base is None
+        or compare is None
+        or type(base) in scalars
+        or type(compare) in scalars
+        or type(base) != type(compare)
+    ):
+        return diff_scalar(base, compare, base_pointer, compare_pointer)
+    if type(base) in objects and type(compare) in objects:
+        return diff_obj(base, compare, base_pointer, compare_pointer)
+    if type(base) in arrays and type(compare) in arrays:
+        return diff_array(base, compare, base_pointer, compare_pointer)
+
+
+def diff_obj(base, compare, base_pointer="", compare_pointer=""):
+    deletions = [
+        {
+            "base_pointer": f"{base_pointer}/{k}",
+            "compare_pointer": f"{compare_pointer}/{k}",
+            "type": "DELETE",
+        }
+        for k in set(base.keys()) - set(compare.keys())
+    ]
+    additions = [
+        {
+            "base_pointer": f"{base_pointer}/{k}",
+            "compare_pointer": f"{compare_pointer}/{k}",
+            "type": "ADD",
+        }
+        for k in set(compare.keys()) - set(base.keys())
+    ]
+    updates = []
+    for k in set(base.keys()) & set(compare.keys()):
+        updates.extend(
+            diff_value(
+                base[k],
+                compare[k],
+                f"{base_pointer}/{k}",
+                f"{compare_pointer}/{k}",
+            )
+        )
+    return deletions + additions + updates
