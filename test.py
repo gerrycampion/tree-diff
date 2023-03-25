@@ -1,10 +1,6 @@
 from json_loader import load_from_file, save_to_file
-from diff_score import (
-    diff_scores,
-    ngrams,
-    all_values,
-    pair_arrays,
-    pair_arrays_quick_ratio,
+from ngram_list_matcher import NgramListMatcher
+from diff_json import (
     diff_obj,
 )
 
@@ -18,7 +14,7 @@ out_dir = "./out/"
 base = load_from_file(base_filename)
 compare = load_from_file(compare_filename)
 
-diffs = diff_obj(base, compare)
+diffs = diff_obj(NgramListMatcher, base, compare)
 
 save_to_file(
     {"diffs": diffs},
