@@ -147,7 +147,8 @@ def max_len(base, compare):
 
 
 def decrement(num):
-    return int(num / 2) if num > 16 else num - 1
+    # return int(num / 2) if num > 16 else num - 1
+    return min(int(num / 2), 128) if num > 16 else num - 1
 
 
 def pair_arrays(base, compare):
@@ -201,10 +202,10 @@ def diff_scalar(base, compare, base_pointer, compare_pointer):
     if base != compare:
         return [
             {
-                "base_pointer": base_pointer,
-                "compare_pointer": compare_pointer,
+                "path_base": base_pointer,
+                "path_compare": compare_pointer,
                 "op": "replace",
-                "base": base,
+                "_value_base": base,
                 "value": compare,
             },
             *(
@@ -231,17 +232,18 @@ def diff_array(base, compare, base_pointer, compare_pointer):
     pairs = pair_arrays(json_base, json_compare)
     deletions = [
         {
-            "base_pointer": f"{base_pointer}/{json_to_base[item][0]}",
-            "compare_pointer": f"{compare_pointer}",
+            "path_base": f"{base_pointer}/{json_to_base[item][0]}",
+            "path_compare": f"{compare_pointer}",
             "op": "remove",
         }
         for item in json_base
     ]
     additions = [
         {
-            "base_pointer": f"{base_pointer}",
-            "compare_pointer": f"{compare_pointer}/{json_to_compare[item][0]}",
+            "path_base": f"{base_pointer}",
+            "path_compare": f"{compare_pointer}/{json_to_compare[item][0]}",
             "op": "add",
+            "value": json_to_compare[item][1],
         }
         for item in json_compare
     ]
@@ -279,17 +281,18 @@ def diff_value(base, compare, base_pointer, compare_pointer):
 def diff_obj(base, compare, base_pointer="", compare_pointer=""):
     deletions = [
         {
-            "base_pointer": f"{base_pointer}/{k}",
-            "compare_pointer": f"{compare_pointer}/{k}",
+            "path_base": f"{base_pointer}/{k}",
+            "path_compare": f"{compare_pointer}/{k}",
             "op": "remove",
         }
         for k in set(base.keys()) - set(compare.keys())
     ]
     additions = [
         {
-            "base_pointer": f"{base_pointer}/{k}",
-            "compare_pointer": f"{compare_pointer}/{k}",
+            "path_base": f"{base_pointer}/{k}",
+            "path_compare": f"{compare_pointer}/{k}",
             "op": "add",
+            "value": compare[k],
         }
         for k in set(compare.keys()) - set(base.keys())
     ]
