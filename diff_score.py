@@ -150,7 +150,6 @@ def decrement(num):
     return int(num / 2) if num > 16 else num - 1
 
 
-# TODO: lowercase all strings?
 def pair_arrays(base, compare):
     pairs = []
     steps = 1
@@ -204,22 +203,29 @@ def diff_scalar(base, compare, base_pointer, compare_pointer):
             {
                 "base_pointer": base_pointer,
                 "compare_pointer": compare_pointer,
-                "type": "UPDATE",
+                "op": "replace",
                 "base": base,
-                "comp": compare,
-            }
+                "value": compare,
+            },
+            *(
+                []
+                if base_pointer == compare_pointer
+                else [{"from": base_pointer, "path": compare_pointer, "op": "move"}]
+            ),
         ]
     return []
 
 
+def stringify(json_list):
+    return {
+        dumps(item, sort_keys=True, separators=(",", ":")): (index, item)
+        for (index, item) in enumerate(json_list)
+    }
+
+
 def diff_array(base, compare, base_pointer, compare_pointer):
-    json_to_base = {
-        dumps(item, sort_keys=True): (index, item) for (index, item) in enumerate(base)
-    }
-    json_to_compare = {
-        dumps(item, sort_keys=True): (index, item)
-        for (index, item) in enumerate(compare)
-    }
+    json_to_base = stringify(base)
+    json_to_compare = stringify(compare)
     json_base = set(json_to_base.keys())
     json_compare = set(json_to_compare.keys())
     pairs = pair_arrays(json_base, json_compare)
@@ -227,7 +233,7 @@ def diff_array(base, compare, base_pointer, compare_pointer):
         {
             "base_pointer": f"{base_pointer}/{json_to_base[item][0]}",
             "compare_pointer": f"{compare_pointer}",
-            "type": "DELETE",
+            "op": "remove",
         }
         for item in json_base
     ]
@@ -235,7 +241,7 @@ def diff_array(base, compare, base_pointer, compare_pointer):
         {
             "base_pointer": f"{base_pointer}",
             "compare_pointer": f"{compare_pointer}/{json_to_compare[item][0]}",
-            "type": "ADD",
+            "op": "add",
         }
         for item in json_compare
     ]
@@ -275,7 +281,7 @@ def diff_obj(base, compare, base_pointer="", compare_pointer=""):
         {
             "base_pointer": f"{base_pointer}/{k}",
             "compare_pointer": f"{compare_pointer}/{k}",
-            "type": "DELETE",
+            "op": "remove",
         }
         for k in set(base.keys()) - set(compare.keys())
     ]
@@ -283,7 +289,7 @@ def diff_obj(base, compare, base_pointer="", compare_pointer=""):
         {
             "base_pointer": f"{base_pointer}/{k}",
             "compare_pointer": f"{compare_pointer}/{k}",
-            "type": "ADD",
+            "op": "add",
         }
         for k in set(compare.keys()) - set(base.keys())
     ]
