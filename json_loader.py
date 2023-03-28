@@ -8,4 +8,9 @@ def load_from_file(filename):
 
 def save_to_file(obj, filename):
     with open(filename, "w") as fp:
-        dump(obj=obj, fp=fp, indent=3)
+        dump(
+            obj=obj,
+            fp=fp,
+            indent=3,
+            sort_keys=True,
+        )

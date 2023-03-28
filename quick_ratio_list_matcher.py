@@ -30,23 +30,6 @@ def _all_values(tree):
     return lst
 
 
-def _diff_str(base_node: str, compare_node: str):
-    # return 100 if base_node == compare_node else 0
-    """
-    Where T is the total number of elements in both sequences,
-    and M is the number of matches,
-    this is 2.0*M / T.
-    Note that this is 1.0 if the sequences are identical,
-    and 0.0 if they have nothing in common.
-    """
-    return SequenceMatcher(
-        None,
-        base_node,
-        compare_node,
-        False,
-    ).quick_ratio()
-
-
 def _diff_score(base_node, compare_node):
     base = base_node["node"]
     compare = compare_node["node"]
@@ -81,9 +64,33 @@ def _diff_scores(base, compare):
     return scores
 
 
-class NgramListMatcher(BaseListMatcher):
+def _diff_str(base_node: str, compare_node: str):
+    # return 100 if base_node == compare_node else 0
+    """
+    Where T is the total number of elements in both sequences,
+    and M is the number of matches,
+    this is 2.0*M / T.
+    Note that this is 1.0 if the sequences are identical,
+    and 0.0 if they have nothing in common.
+    """
+    return SequenceMatcher(
+        None,
+        base_node,
+        compare_node,
+        False,
+    ).quick_ratio()
+
+
+class QRListMatcher(BaseListMatcher):
     def match_lists(base, compare):
+        scores = []
         for base_node, compare_node in product(base, compare):
-            if isinstance(base_node, str) and isinstance(compare_node, str):
-                _diff_str(base_node, compare_node)
-        return ""
+            score = _diff_str(base_node, compare_node)
+            scores.append({"score": score, "base": base_node, "comp": compare_node})
+        pairs = []
+        for score in sorted(scores, key=lambda score: score["score"], reverse=True):
+            if score["base"] in base and score["comp"] in compare:
+                pairs.append((score["base"], score["comp"]))
+                base.remove(score["base"])
+                compare.remove(score["comp"])
+        return pairs

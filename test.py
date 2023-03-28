@@ -1,11 +1,10 @@
 from json_loader import load_from_file, save_to_file
 from ngram_list_matcher import NgramListMatcher
+from quick_ratio_list_matcher import QRListMatcher
 from diff_json import (
     diff_obj,
 )
-
-# fast fourier transforms?
-# gale-shapely algo?
+from json import dumps
 
 base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-1-8.json"
 compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-2-0.json"
@@ -14,7 +13,10 @@ out_dir = "./out/"
 base = load_from_file(base_filename)
 compare = load_from_file(compare_filename)
 
-diffs = diff_obj(NgramListMatcher, base, compare)
+diffs = sorted(
+    diff_obj(QRListMatcher, base, compare),
+    key=lambda diff: dumps(diff, sort_keys=True, separators=(",", ":")),
+)
 
 save_to_file(
     {"diffs": diffs},
