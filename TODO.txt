@@ -2,6 +2,8 @@ create patch file
 lowercase all strings during pairwise comparison
 separate list comparisons from diff logic and use a base class
 Decide pair algorithm based on size of lists vs max string
+compare patch file with other patch file creators
+https://json-patch-builder-online.github.io/
 
 fast fourier transforms?
 gale-shapely algo?

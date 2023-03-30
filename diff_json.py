@@ -2,6 +2,26 @@ from json import dumps
 from base_list_matcher import BaseListMatcher
 
 
+def diff_value(
+    list_matcher: BaseListMatcher, base, compare, base_pointer, compare_pointer
+):
+    scalars = {str, int, float, bool}
+    objects = {dict}
+    arrays = {list, tuple}
+    if (
+        base is None
+        or compare is None
+        or type(base) in scalars
+        or type(compare) in scalars
+        or type(base) != type(compare)
+    ):
+        return diff_scalar(base, compare, base_pointer, compare_pointer)
+    if type(base) in objects and type(compare) in objects:
+        return diff_obj(list_matcher, base, compare, base_pointer, compare_pointer)
+    if type(base) in arrays and type(compare) in arrays:
+        return diff_array(list_matcher, base, compare, base_pointer, compare_pointer)
+
+
 def diff_scalar(base, compare, base_pointer, compare_pointer):
     if base != compare:
         return [
@@ -21,11 +41,42 @@ def diff_scalar(base, compare, base_pointer, compare_pointer):
     return []
 
 
-def _stringify(json_list):
-    return {
-        dumps(item, sort_keys=True, separators=(",", ":")): (index, item)
-        for (index, item) in enumerate(json_list)
-    }
+def diff_obj(
+    list_matcher: BaseListMatcher,
+    base: dict,
+    compare: dict,
+    base_pointer="",
+    compare_pointer="",
+):
+    deletions = [
+        {
+            "path_base": f"{base_pointer}/{k}",
+            "path_compare": f"{compare_pointer}/{k}",
+            "op": "remove",
+        }
+        for k in set(base.keys()) - set(compare.keys())
+    ]
+    additions = [
+        {
+            "path_base": f"{base_pointer}/{k}",
+            "path_compare": f"{compare_pointer}/{k}",
+            "op": "add",
+            "value": compare[k],
+        }
+        for k in set(compare.keys()) - set(base.keys())
+    ]
+    updates = []
+    for k in set(base.keys()) & set(compare.keys()):
+        updates.extend(
+            diff_value(
+                list_matcher,
+                base[k],
+                compare[k],
+                f"{base_pointer}/{k}",
+                f"{compare_pointer}/{k}",
+            )
+        )
+    return deletions + additions + updates
 
 
 def diff_array(
@@ -67,59 +118,8 @@ def diff_array(
     return deletions + additions + updates
 
 
-def diff_value(
-    list_matcher: BaseListMatcher, base, compare, base_pointer, compare_pointer
-):
-    scalars = {str, int, float, bool}
-    objects = {dict}
-    arrays = {list, tuple}
-    if (
-        base is None
-        or compare is None
-        or type(base) in scalars
-        or type(compare) in scalars
-        or type(base) != type(compare)
-    ):
-        return diff_scalar(base, compare, base_pointer, compare_pointer)
-    if type(base) in objects and type(compare) in objects:
-        return diff_obj(list_matcher, base, compare, base_pointer, compare_pointer)
-    if type(base) in arrays and type(compare) in arrays:
-        return diff_array(list_matcher, base, compare, base_pointer, compare_pointer)
-
-
-def diff_obj(
-    list_matcher: BaseListMatcher,
-    base: dict,
-    compare: dict,
-    base_pointer="",
-    compare_pointer="",
-):
-    deletions = [
-        {
-            "path_base": f"{base_pointer}/{k}",
-            "path_compare": f"{compare_pointer}/{k}",
-            "op": "remove",
-        }
-        for k in set(base.keys()) - set(compare.keys())
-    ]
-    additions = [
-        {
-            "path_base": f"{base_pointer}/{k}",
-            "path_compare": f"{compare_pointer}/{k}",
-            "op": "add",
-            "value": compare[k],
-        }
-        for k in set(compare.keys()) - set(base.keys())
-    ]
-    updates = []
-    for k in set(base.keys()) & set(compare.keys()):
-        updates.extend(
-            diff_value(
-                list_matcher,
-                base[k],
-                compare[k],
-                f"{base_pointer}/{k}",
-                f"{compare_pointer}/{k}",
-            )
-        )
-    return deletions + additions + updates
+def _stringify(json_list):
+    return {
+        dumps(item, sort_keys=True, separators=(",", ":")): (index, item)
+        for (index, item) in enumerate(json_list)
+    }
