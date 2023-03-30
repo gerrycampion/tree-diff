@@ -14,7 +14,7 @@ base = load_from_file(base_filename)
 compare = load_from_file(compare_filename)
 
 diffs = sorted(
-    diff_obj(QRListMatcher, base, compare),
+    diff_obj(NgramListMatcher, base, compare),
     key=lambda diff: dumps(diff, sort_keys=True, separators=(",", ":")),
 )
 

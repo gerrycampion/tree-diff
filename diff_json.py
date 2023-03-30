@@ -26,16 +26,21 @@ def diff_scalar(base, compare, base_pointer, compare_pointer):
     if base != compare:
         return [
             {
+                "op": "test",
                 "path_base": base_pointer,
                 "path_compare": compare_pointer,
+                "value": base,
+            },
+            {
                 "op": "replace",
-                "_value_base": base,
+                "path_base": base_pointer,
+                "path_compare": compare_pointer,
                 "value": compare,
             },
             *(
                 []
                 if base_pointer == compare_pointer
-                else [{"from": base_pointer, "path": compare_pointer, "op": "move"}]
+                else [{"op": "move", "from": base_pointer, "path": compare_pointer}]
             ),
         ]
     return []
@@ -49,18 +54,27 @@ def diff_obj(
     compare_pointer="",
 ):
     deletions = [
-        {
-            "path_base": f"{base_pointer}/{k}",
-            "path_compare": f"{compare_pointer}/{k}",
-            "op": "remove",
-        }
+        patch
         for k in set(base.keys()) - set(compare.keys())
+        for patch in (
+            {
+                "op": "test",
+                "path_base": f"{base_pointer}/{k}",
+                "path_compare": f"{compare_pointer}/{k}",
+                "value": base[k],
+            },
+            {
+                "op": "remove",
+                "path_base": f"{base_pointer}/{k}",
+                "path_compare": f"{compare_pointer}/{k}",
+            },
+        )
     ]
     additions = [
         {
+            "op": "add",
             "path_base": f"{base_pointer}/{k}",
             "path_compare": f"{compare_pointer}/{k}",
-            "op": "add",
             "value": compare[k],
         }
         for k in set(compare.keys()) - set(base.keys())
@@ -88,18 +102,27 @@ def diff_array(
     json_compare = set(json_to_compare.keys())
     pairs = list_matcher.match_lists(json_base, json_compare)
     deletions = [
-        {
-            "path_base": f"{base_pointer}/{json_to_base[item][0]}",
-            "path_compare": f"{compare_pointer}",
-            "op": "remove",
-        }
+        patch
         for item in json_base
+        for patch in (
+            {
+                "op": "test",
+                "path_base": f"{base_pointer}/{json_to_base[item][0]}",
+                "path_compare": f"{compare_pointer}",
+                "value": json_to_base[item][1],
+            },
+            {
+                "op": "remove",
+                "path_base": f"{base_pointer}/{json_to_base[item][0]}",
+                "path_compare": f"{compare_pointer}",
+            },
+        )
     ]
     additions = [
         {
+            "op": "add",
             "path_base": f"{base_pointer}",
             "path_compare": f"{compare_pointer}/{json_to_compare[item][0]}",
-            "op": "add",
             "value": json_to_compare[item][1],
         }
         for item in json_compare
