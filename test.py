@@ -6,8 +6,10 @@ from diff_json import (
 )
 from json import dumps
 
-base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-1-8.json"
-compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-2-0.json"
+# base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-1-8.json"
+# compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-2-0.json"
+base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/packages/sdtmct-2022-09-30.json"
+compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/packages/sdtmct-2022-12-16.json"
 out_dir = "./out/"
 
 base = load_from_file(base_filename)

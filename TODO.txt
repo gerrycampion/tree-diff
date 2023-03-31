@@ -1,4 +1,4 @@
-create patch file
+convert diff to patch file
 lowercase all strings during pairwise comparison
 separate list comparisons from diff logic and use a base class
 Decide pair algorithm based on size of lists vs max string
