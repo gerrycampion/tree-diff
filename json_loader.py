@@ -1,15 +1,33 @@
-from json import load, dump
+from collections.abc import Iterable
+from json import dump, load
+from typing import Any
 
 
-def load_from_file(filename):
+def _strip_diff_values(obj: Any, keep: Iterable[str] | None = None) -> Any:
+    keep_set = set(keep or [])
+    remove = {"value_base", "value_compare"} - keep_set
+
+    if isinstance(obj, list):
+        return [_strip_diff_values(item, keep_set) for item in obj]
+    if isinstance(obj, dict):
+        return {
+            key: _strip_diff_values(value, keep_set)
+            for key, value in obj.items()
+            if key not in remove
+        }
+    return obj
+
+
+def load_from_file(filename: str) -> Any:
     with open(filename) as fp:
         return load(fp)
 
 
-def save_to_file(obj, filename):
+def save_to_file(obj: Any, filename: str, keep: Iterable[str] | None = None) -> None:
+    cleaned = _strip_diff_values(obj, keep)
     with open(filename, "w") as fp:
         dump(
-            obj=obj,
+            obj=cleaned,
             fp=fp,
             indent=3,
             sort_keys=True,

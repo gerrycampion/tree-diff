@@ -1,17 +1,21 @@
-from json import dumps
-from base_list_matcher import BaseListMatcher
 from dataclasses import dataclass
+from json import dumps
+from typing import Any
+
+from base_list_matcher import BaseListMatcher
 
 
 @dataclass
 class DiffNode:
-    base: any
-    compare: any
+    base: Any
+    compare: Any
     base_pointer: str = ""
     compare_pointer: str = ""
 
 
-def diff_value(list_matcher: BaseListMatcher, diff_node: DiffNode):
+def diff_value(
+    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+) -> list[dict[str, Any]]:
     base, compare = diff_node.base, diff_node.compare
     scalars = {str, int, float, bool}
     objects = {dict}
@@ -28,9 +32,10 @@ def diff_value(list_matcher: BaseListMatcher, diff_node: DiffNode):
         return diff_obj(list_matcher, diff_node)
     if type(base) in arrays and type(compare) in arrays:
         return diff_array(list_matcher, diff_node)
+    return []
 
 
-def diff_scalar(diff_node: DiffNode):
+def diff_scalar(diff_node: DiffNode) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
         diff_node.base,
         diff_node.compare,
@@ -50,14 +55,16 @@ def diff_scalar(diff_node: DiffNode):
     return []
 
 
-def diff_obj(list_matcher: BaseListMatcher, diff_node: DiffNode):
+def diff_obj(
+    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
         diff_node.base,
         diff_node.compare,
         diff_node.base_pointer,
         diff_node.compare_pointer,
     )
-    deletions = [
+    deletions: list[dict[str, Any]] = [
         {
             "op": "remove",
             "path_base": f"{base_pointer}/{k}",
@@ -66,7 +73,7 @@ def diff_obj(list_matcher: BaseListMatcher, diff_node: DiffNode):
         }
         for k in set(base.keys()) - set(compare.keys())
     ]
-    additions = [
+    additions: list[dict[str, Any]] = [
         {
             "op": "add",
             "path_base": f"{base_pointer}/{k}",
@@ -75,7 +82,7 @@ def diff_obj(list_matcher: BaseListMatcher, diff_node: DiffNode):
         }
         for k in set(compare.keys()) - set(base.keys())
     ]
-    updates = []
+    updates: list[dict[str, Any]] = []
     for k in set(base.keys()) & set(compare.keys()):
         updates.extend(
             diff_value(
@@ -88,7 +95,9 @@ def diff_obj(list_matcher: BaseListMatcher, diff_node: DiffNode):
     return deletions + additions + updates
 
 
-def diff_array(list_matcher: BaseListMatcher, diff_node: DiffNode):
+def diff_array(
+    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
         diff_node.base,
         diff_node.compare,
@@ -100,7 +109,7 @@ def diff_array(list_matcher: BaseListMatcher, diff_node: DiffNode):
     json_base = set(json_to_base.keys())
     json_compare = set(json_to_compare.keys())
     pairs = list_matcher.match_lists(json_base, json_compare)
-    deletions = [
+    deletions: list[dict[str, Any]] = [
         {
             "op": "remove",
             "path_base": f"{base_pointer}/{json_to_base[item][0]}",
@@ -109,7 +118,7 @@ def diff_array(list_matcher: BaseListMatcher, diff_node: DiffNode):
         }
         for item in json_base
     ]
-    additions = [
+    additions: list[dict[str, Any]] = [
         {
             "op": "add",
             "path_base": f"{base_pointer}",
@@ -118,32 +127,32 @@ def diff_array(list_matcher: BaseListMatcher, diff_node: DiffNode):
         }
         for item in json_compare
     ]
-    updates = []
-    moves = []
-    for base, comp in pairs:
-        if json_to_base[base][0] != json_to_compare[comp][0]:
+    updates: list[dict[str, Any]] = []
+    moves: list[dict[str, str]] = []
+    for base_item, comp_item in pairs:
+        if json_to_base[base_item][0] != json_to_compare[comp_item][0]:
             moves.append(
                 {
                     "op": "move",
-                    "path_base": f"{base_pointer}/{json_to_base[base][0]}",
-                    "path_compare": f"{compare_pointer}/{json_to_compare[comp][0]}",
+                    "path_base": f"{base_pointer}/{json_to_base[base_item][0]}",
+                    "path_compare": f"{compare_pointer}/{json_to_compare[comp_item][0]}",
                 }
             )
         updates.extend(
             diff_value(
                 list_matcher,
                 DiffNode(
-                    json_to_base[base][1],
-                    json_to_compare[comp][1],
-                    f"{base_pointer}/{json_to_base[base][0]}",
-                    f"{compare_pointer}/{json_to_compare[comp][0]}",
+                    json_to_base[base_item][1],
+                    json_to_compare[comp_item][1],
+                    f"{base_pointer}/{json_to_base[base_item][0]}",
+                    f"{compare_pointer}/{json_to_compare[comp_item][0]}",
                 ),
             )
         )
     return deletions + additions + moves + updates
 
 
-def _stringify(json_list):
+def _stringify(json_list: list[Any] | tuple[Any, ...]) -> dict[str, tuple[int, Any]]:
     return {
         dumps(item, sort_keys=True, separators=(",", ":")): (index, item)
         for (index, item) in enumerate(json_list)

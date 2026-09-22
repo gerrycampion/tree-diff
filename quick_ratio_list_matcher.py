@@ -1,12 +1,14 @@
-from each_deep import each_deep
-from itertools import product
-from difflib import SequenceMatcher
 from collections import defaultdict
+from difflib import SequenceMatcher
+from itertools import product
+from typing import Any
+
 from base_list_matcher import BaseListMatcher
+from each_deep import each_deep
 
 
-def _post_order_list(tree):
-    lst = []
+def _post_order_list(tree: Any) -> list[dict[str, Any]]:
+    lst: list[dict[str, Any]] = []
     each_deep(
         node=tree,
         after=lambda context, path, indexed_path: lst.append(
@@ -16,13 +18,13 @@ def _post_order_list(tree):
     return lst
 
 
-def _append_if_str(context, lst):
+def _append_if_str(context: list[Any], lst: list[str]) -> None:
     if isinstance(context[-1], str):
         lst.append(context[-1])
 
 
-def _all_values(tree):
-    lst = []
+def _all_values(tree: Any) -> list[str]:
+    lst: list[str] = []
     each_deep(
         node=tree,
         after=lambda context, path, indexed_path: _append_if_str(context, lst),
@@ -30,7 +32,7 @@ def _all_values(tree):
     return lst
 
 
-def _diff_score(base_node, compare_node):
+def _diff_score(base_node: dict[str, Any], compare_node: dict[str, Any]) -> float:
     base = base_node["node"]
     compare = compare_node["node"]
     if isinstance(base, str) and isinstance(compare, str):
@@ -38,15 +40,17 @@ def _diff_score(base_node, compare_node):
     return 0.0
 
 
-def _diff_scores(base, compare):
+def _diff_scores(base: Any, compare: Any) -> dict[str, list[dict[str, Any]]]:
     base_nodes = _post_order_list(base)
     compare_nodes = _post_order_list(compare)
-    node_levels = defaultdict(lambda: {"base_nodes": [], "compare_nodes": []})
+    node_levels: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(
+        lambda: {"base_nodes": [], "compare_nodes": []}
+    )
     for base_node in base_nodes:
         node_levels[base_node["path"]]["base_nodes"].append(base_node)
     for compare_node in compare_nodes:
         node_levels[compare_node["path"]]["compare_nodes"].append(compare_node)
-    scores = defaultdict(lambda: [])
+    scores: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for path, level in node_levels.items():
         for base_node, compare_node in product(
             level["base_nodes"], level["compare_nodes"]
@@ -64,7 +68,7 @@ def _diff_scores(base, compare):
     return scores
 
 
-def _diff_str(base_node: str, compare_node: str):
+def _diff_str(base_node: str, compare_node: str) -> float:
     # return 100 if base_node == compare_node else 0
     """
     Where T is the total number of elements in both sequences,
@@ -81,13 +85,14 @@ def _diff_str(base_node: str, compare_node: str):
     ).quick_ratio()
 
 
-class QRListMatcher(BaseListMatcher):
-    def match_lists(base, compare):
-        scores = []
+class QRListMatcher(BaseListMatcher[str]):
+    @staticmethod
+    def match_lists(base: set[str], compare: set[str]) -> list[tuple[str, str]]:
+        scores: list[dict[str, Any]] = []
         for base_node, compare_node in product(base, compare):
             score = _diff_str(base_node, compare_node)
             scores.append({"score": score, "base": base_node, "comp": compare_node})
-        pairs = []
+        pairs: list[tuple[str, str]] = []
         for score in sorted(scores, key=lambda score: score["score"], reverse=True):
             if score["base"] in base and score["comp"] in compare:
                 pairs.append((score["base"], score["comp"]))

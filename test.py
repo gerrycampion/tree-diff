@@ -1,28 +1,33 @@
+import os
+from json import dumps
+from typing import Any
+
+from diff_json import DiffNode, diff_obj
 from json_loader import load_from_file, save_to_file
 from ngram_list_matcher import NgramListMatcher
-from quick_ratio_list_matcher import QRListMatcher
-from diff_json import (
-    diff_obj,
-)
-from json import dumps
 
-# base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-1-8.json"
-# compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/products/data-tabulation/sdtm-2-0.json"
-base_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/packages/sdtmct-2022-09-30.json"
-compare_filename = "C:/Users/GerryCampion/Code/cdisc-library-src-files/cdisc-json/packages/sdtmct-2022-12-16.json"
-out_dir = "./out/"
+base_filename: str = os.environ.get("BASE_FILENAME", "")
+compare_filename: str = os.environ.get("COMPARE_FILENAME", "")
+output_filename: str = os.environ.get("OUTPUT_FILENAME", "")
 
-base = load_from_file(base_filename)
-compare = load_from_file(compare_filename)
+if not base_filename or not compare_filename or not output_filename:
+    raise ValueError(
+        "Set BASE_FILENAME, COMPARE_FILENAME, and OUTPUT_FILENAME in .env or the environment."
+    )
 
-diffs = sorted(
-    diff_obj(NgramListMatcher, base, compare),
+base: Any = load_from_file(base_filename)
+compare: Any = load_from_file(compare_filename)
+
+diffs: list[dict[str, Any]] = sorted(
+    diff_obj(NgramListMatcher, DiffNode(base, compare)),
     key=lambda diff: dumps(diff, sort_keys=True, separators=(",", ":")),
 )
 
+
 save_to_file(
     {"diffs": diffs},
-    f"{out_dir}diffs.json",
+    output_filename,
+    keep=["diffs", "op", "path_base", "path_compare"],
 )
 
 
