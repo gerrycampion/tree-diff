@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections import defaultdict
 from collections.abc import Iterable
 from difflib import SequenceMatcher
@@ -72,6 +70,14 @@ def _diff_scores(base: Any, compare: Any) -> dict[str, list[dict[str, Any]]]:
 
 
 def _diff_str(base_node: str, compare_node: str) -> float:
+    # return 100 if base_node == compare_node else 0
+    """
+    Where T is the total number of elements in both sequences,
+    and M is the number of matches,
+    this is 2.0*M / T.
+    Note that this is 1.0 if the sequences are identical,
+    and 0.0 if they have nothing in common.
+    """    
     return SequenceMatcher(
         None,
         base_node,
@@ -83,18 +89,16 @@ def _diff_str(base_node: str, compare_node: str) -> float:
 class QRListMatcher(BaseListMatcher[str]):
     @staticmethod
     def match_lists(
-        base: Iterable[str], compare: Iterable[str]
+        base: set[str], compare: set[str]
     ) -> list[tuple[str, str]]:
-        base_list = list(base)
-        compare_list = list(compare)
         scores: list[dict[str, Any]] = []
-        for base_node, compare_node in product(base_list, compare_list):
+        for base_node, compare_node in product(base, compare):
             score = _diff_str(base_node, compare_node)
             scores.append({"score": score, "base": base_node, "comp": compare_node})
         pairs: list[tuple[str, str]] = []
         for score in sorted(scores, key=lambda score: score["score"], reverse=True):
-            if score["base"] in base_list and score["comp"] in compare_list:
+            if score["base"] in base and score["comp"] in compare:
                 pairs.append((score["base"], score["comp"]))
-                base_list.remove(score["base"])
-                compare_list.remove(score["comp"])
+                base.remove(score["base"])
+                compare.remove(score["comp"])
         return pairs

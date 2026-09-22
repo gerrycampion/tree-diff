@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from typing import Any
@@ -55,7 +53,7 @@ def _find_closest_matches(
 
 
 def _remove(
-    lst: list[str], string_to_ngram: dict[str, dict[str, Any]], item: str
+    lst: set[str], string_to_ngram: dict[str, dict[str, Any]], item: str
 ) -> None:
     lst.remove(item)
     for match_me in string_to_ngram.get(item, {}).get("match_me", set()):
@@ -65,8 +63,8 @@ def _remove(
 
 def _intersections(
     string_to_ngram: dict[str, dict[str, Any]],
-    base: list[str],
-    compare: list[str],
+    base: set[str],
+    compare: set[str],
     pairs: list[tuple[str, str]],
     ngram_len: int,
 ) -> None:
@@ -83,14 +81,16 @@ def _intersections(
                         compare_item_only_has_base = True
             if compare_item_only_has_base and len(compare_items_that_have_base) == 1:
                 compare_item = compare_items_that_have_base[0]
-                pairs.append((base_item, compare_item))
+                pairs.append((base_item, compare_item,
+                        #  "ngram_len": ngram_len
+                        ))
                 _remove(base, string_to_ngram, base_item)
                 _remove(compare, string_to_ngram, compare_item)
 
 
 def _match_lists(
-    base: list[str],
-    compare: list[str],
+    base: set[str],
+    compare: set[str],
     pairs: list[tuple[str, str]],
     ngram_len: int,
     steps: int,
@@ -120,26 +120,25 @@ def _max_len(base: Iterable[str], compare: Iterable[str]) -> int:
 
 
 def _decrement(num: int) -> int:
+    # return int(num / 2) if num > 16 else num - 1
     return min(int(num / 2), 128) if num > 16 else num - 1
 
 
 class NgramListMatcher(BaseListMatcher[str]):
     @staticmethod
     def match_lists(
-        base: Iterable[str], compare: Iterable[str]
+        base: set[str], compare: set[str]
     ) -> list[tuple[str, str]]:
-        base_list = list(base)
-        compare_list = list(compare)
         pairs: list[tuple[str, str]] = []
         steps = 1
-        _match_lists(base_list, compare_list, pairs, 0, steps)
-        ngram_length = _decrement(_max_len(base_list, compare_list))
-        while ngram_length > 0 and base_list and compare_list:
+        _match_lists(base, compare, pairs, 0, steps)
+        ngram_length = _decrement(_max_len(base, compare))
+        while ngram_length > 0 and base and compare:
             steps += 1
             pairs_length = len(pairs)
-            _match_lists(base_list, compare_list, pairs, ngram_length, steps)
+            _match_lists(base, compare, pairs, ngram_length, steps)
             if pairs_length == len(pairs):
                 ngram_length = _decrement(
-                    min(ngram_length, _max_len(base_list, compare_list))
+                    min(ngram_length, _max_len(base, compare))
                 )
         return pairs
