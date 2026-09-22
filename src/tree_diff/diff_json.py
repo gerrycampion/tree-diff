@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from json import dumps
 from typing import Any
 
-from base_list_matcher import BaseListMatcher
+from tree_diff.base_list_matcher import BaseListMatcher
 
 
 @dataclass
@@ -14,7 +16,8 @@ class DiffNode:
 
 
 def diff_value(
-    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare = diff_node.base, diff_node.compare
     scalars = {str, int, float, bool}
@@ -56,7 +59,8 @@ def diff_scalar(diff_node: DiffNode) -> list[dict[str, Any]]:
 
 
 def diff_obj(
-    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
         diff_node.base,
@@ -96,7 +100,8 @@ def diff_obj(
 
 
 def diff_array(
-    list_matcher: type[BaseListMatcher[str]], diff_node: DiffNode
+    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
         diff_node.base,
@@ -155,5 +160,5 @@ def diff_array(
 def _stringify(json_list: list[Any] | tuple[Any, ...]) -> dict[str, tuple[int, Any]]:
     return {
         dumps(item, sort_keys=True, separators=(",", ":")): (index, item)
-        for (index, item) in enumerate(json_list)
+        for index, item in enumerate(json_list)
     }

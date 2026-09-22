@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from json import dump, load
 from typing import Any
@@ -19,16 +21,11 @@ def _strip_diff_values(obj: Any, keep: Iterable[str] | None = None) -> Any:
 
 
 def load_from_file(filename: str) -> Any:
-    with open(filename) as fp:
+    with open(filename, encoding="utf-8") as fp:
         return load(fp)
 
 
 def save_to_file(obj: Any, filename: str, keep: Iterable[str] | None = None) -> None:
     cleaned = _strip_diff_values(obj, keep)
-    with open(filename, "w") as fp:
-        dump(
-            obj=cleaned,
-            fp=fp,
-            indent=3,
-            sort_keys=True,
-        )
+    with open(filename, "w", encoding="utf-8") as fp:
+        dump(obj=cleaned, fp=fp, indent=3, sort_keys=True)

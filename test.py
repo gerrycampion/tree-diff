@@ -2,9 +2,9 @@ import os
 from json import dumps
 from typing import Any
 
-from diff_json import DiffNode, diff_obj
-from json_loader import load_from_file, save_to_file
-from ngram_list_matcher import NgramListMatcher
+from tree_diff.diff_json import DiffNode, diff_obj
+from tree_diff.json_loader import load_from_file, save_to_file
+from tree_diff.ngram_list_matcher import NgramListMatcher
 
 base_filename: str = os.environ.get("BASE_FILENAME", "")
 compare_filename: str = os.environ.get("COMPARE_FILENAME", "")
