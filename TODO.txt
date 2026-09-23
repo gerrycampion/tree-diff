@@ -1,3 +1,4 @@
+add support for xml and tabular datasets
 convert diff to patch file
 lowercase all strings during pairwise comparison
 separate list comparisons from diff logic and use a base class

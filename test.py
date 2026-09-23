@@ -1,9 +1,9 @@
 import os
-from os.path import join
 from json import dumps
+from os.path import join
 from typing import Any
 
-from tree_diff.diff_json import DiffNode, diff_obj
+from tree_diff.diff_json import DiffNode, diff_value
 from tree_diff.json_loader import load_from_file, save_to_file
 from tree_diff.ngram_list_matcher import NgramListMatcher
 
@@ -20,7 +20,7 @@ base: Any = load_from_file(base_filename)
 compare: Any = load_from_file(compare_filename)
 
 diffs: list[dict[str, Any]] = sorted(
-    diff_obj(NgramListMatcher, DiffNode(base, compare)),
+    diff_value(NgramListMatcher, DiffNode(base, compare)),
     key=lambda diff: dumps(diff, sort_keys=True, separators=(",", ":")),
 )
 

@@ -14,7 +14,7 @@ class DiffNode:
 
 
 def diff_value(
-    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    list_matcher: type[BaseListMatcher[str]],
     diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare = diff_node.base, diff_node.compare
@@ -57,7 +57,7 @@ def diff_scalar(diff_node: DiffNode) -> list[dict[str, Any]]:
 
 
 def diff_obj(
-    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    list_matcher: type[BaseListMatcher[str]],
     diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (
@@ -98,7 +98,7 @@ def diff_obj(
 
 
 def diff_array(
-    list_matcher: type[BaseListMatcher[str]] | BaseListMatcher[str],
+    list_matcher: type[BaseListMatcher[str]],
     diff_node: DiffNode,
 ) -> list[dict[str, Any]]:
     base, compare, base_pointer, compare_pointer = (

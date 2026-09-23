@@ -1,5 +1,4 @@
 from collections import defaultdict
-from collections.abc import Iterable
 from difflib import SequenceMatcher
 from itertools import product
 from typing import Any
@@ -77,7 +76,7 @@ def _diff_str(base_node: str, compare_node: str) -> float:
     this is 2.0*M / T.
     Note that this is 1.0 if the sequences are identical,
     and 0.0 if they have nothing in common.
-    """    
+    """
     return SequenceMatcher(
         None,
         base_node,
@@ -88,9 +87,7 @@ def _diff_str(base_node: str, compare_node: str) -> float:
 
 class QRListMatcher(BaseListMatcher[str]):
     @staticmethod
-    def match_lists(
-        base: set[str], compare: set[str]
-    ) -> list[tuple[str, str]]:
+    def match_lists(base: set[str], compare: set[str]) -> list[tuple[str, str]]:
         scores: list[dict[str, Any]] = []
         for base_node, compare_node in product(base, compare):
             score = _diff_str(base_node, compare_node)
