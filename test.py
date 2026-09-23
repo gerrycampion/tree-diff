@@ -1,4 +1,5 @@
 import os
+from os.path import join
 from json import dumps
 from typing import Any
 
@@ -8,11 +9,11 @@ from tree_diff.ngram_list_matcher import NgramListMatcher
 
 base_filename: str = os.environ.get("BASE_FILENAME", "")
 compare_filename: str = os.environ.get("COMPARE_FILENAME", "")
-output_filename: str = os.environ.get("OUTPUT_FILENAME", "")
+output_directory: str = os.environ.get("OUTPUT_DIRECTORY", "")
 
-if not base_filename or not compare_filename or not output_filename:
+if not base_filename or not compare_filename or not output_directory:
     raise ValueError(
-        "Set BASE_FILENAME, COMPARE_FILENAME, and OUTPUT_FILENAME in .env or the environment."
+        "Set BASE_FILENAME, COMPARE_FILENAME, and OUTPUT_DIRECTORY in .env or the environment."
     )
 
 base: Any = load_from_file(base_filename)
@@ -25,9 +26,19 @@ diffs: list[dict[str, Any]] = sorted(
 
 
 save_to_file(
-    {"diffs": diffs},
-    output_filename,
+    diffs,
+    join(output_directory, "diff_paths.json"),
     keep=["diffs", "op", "path_base", "path_compare"],
+)
+save_to_file(
+    diffs,
+    join(output_directory, "diff_summary.json"),
+    keep=["diffs", "op", "path_base", "path_compare"],
+)
+save_to_file(
+    diffs,
+    join(output_directory, "diff_detailed.json"),
+    keep=["diffs", "op", "path_base", "path_compare", "value_base", "value_compare"],
 )
 
 

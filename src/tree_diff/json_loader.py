@@ -5,15 +5,12 @@ from typing import Any
 
 def _strip_diff_values(obj: Any, keep: Iterable[str] | None = None) -> Any:
     keep_set = set(keep or [])
-    remove = {"value_base", "value_compare"} - keep_set
 
     if isinstance(obj, list):
         return [_strip_diff_values(item, keep_set) for item in obj]
     if isinstance(obj, dict):
         return {
-            key: _strip_diff_values(value, keep_set)
-            for key, value in obj.items()
-            if key not in remove
+            key: value for key, value in obj.items() if not keep_set or key in keep_set
         }
     return obj
 
