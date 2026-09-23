@@ -26,7 +26,7 @@ def diff_value(
         or compare is None
         or type(base) in scalars
         or type(compare) in scalars
-        or type(base) != type(compare)
+        or type(base) is not type(compare)
     ):
         return diff_scalar(diff_node)
     if type(base) in objects and type(compare) in objects:
@@ -139,6 +139,8 @@ def diff_array(
                     "op": "move",
                     "path_base": f"{base_pointer}/{json_to_base[base_item][0]}",
                     "path_compare": f"{compare_pointer}/{json_to_compare[comp_item][0]}",
+                    "value_base": json_to_base[base_item][1],
+                    "value_compare": json_to_compare[comp_item][1],
                 }
             )
         updates.extend(

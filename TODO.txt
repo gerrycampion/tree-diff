@@ -1,3 +1,10 @@
+debug logging
+markdown output in debug logging
+cli
+ui for uploading files
+diff visualization
+readme
+R-shiny implementation (shinylive + webassembly)
 add support for xml and tabular datasets
 convert diff to patch file
 lowercase all strings during pairwise comparison
