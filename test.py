@@ -1,3 +1,4 @@
+import logging
 import os
 from json import dumps
 from os.path import join
@@ -10,6 +11,14 @@ from tree_diff.ngram_list_matcher import NgramListMatcher
 base_filename: str = os.environ.get("BASE_FILENAME", "")
 compare_filename: str = os.environ.get("COMPARE_FILENAME", "")
 output_directory: str = os.environ.get("OUTPUT_DIRECTORY", "")
+log_level_name: str = os.environ.get("LOG_LEVEL", "WARNING").upper()
+log_level = getattr(logging, log_level_name, None)
+if not isinstance(log_level, int):
+    raise ValueError(
+        "LOG_LEVEL must be a valid Python logging level, e.g. DEBUG, INFO, WARNING, ERROR."
+    )
+
+logging.basicConfig(level=log_level, format="%(levelname)s:%(name)s:%(message)s")
 
 if not base_filename or not compare_filename or not output_directory:
     raise ValueError(
