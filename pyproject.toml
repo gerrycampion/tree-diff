@@ -3,12 +3,12 @@ requires = ["setuptools>=84", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tree-diff"
+name = "tree-diff-py"
 version = "0.1.0"
 description = "Utilities for diffing nested JSON-like structures and matching list items."
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "tree-diff contributors" }]
+authors = [{ name = "tree-diff-py contributors" }]
 license = { text = "MIT" }
 keywords = ["diff", "json", "matching", "lists"]
 classifiers = [

@@ -1,4 +1,4 @@
-"""tree-diff package."""
+"""tree-diff-py package."""
 
 from .base_list_matcher import BaseListMatcher
 from .diff_json import DiffNode, diff_obj

@@ -1,11 +1,11 @@
-# tree-diff
+# tree-diff-py
 
 Utilities for diffing nested JSON-like structures and matching list items.
 
 ## Installation
 
 ```bash
-pip install tree-diff
+pip install tree-diff-py
 ```
 
 ## Development
