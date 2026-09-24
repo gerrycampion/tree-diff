@@ -164,3 +164,87 @@ print(diffs)
 ```
 
 This will return a sequence of diff records describing the semantic changes between the two JSON structures.
+
+## Runtime performance
+
+The implementation is designed to prioritize semantics over raw text diffing. In practice, runtime depends on the size and shape of the data, but the core behavior is:
+
+- recursive traversal of the object tree is linear in the number of nodes visited
+- object comparison is dominated by key-set operations and nested recursion
+- list matching is the expensive part for large arrays because each item is compared using n-gram overlap and candidate matching
+
+### Big-O view
+
+Let:
+
+- $N$ be the total number of scalar/object/array nodes in the JSON tree
+- $K$ be the number of keys in an object
+- $L$ be the number of items in a list
+- $M$ be the average string length of list items
+- $G$ be the n-gram size used for matching
+
+For the recursive diff engine, the worst-case cost is roughly:
+
+$$
+O(N)
+$$
+
+for a tree walk when the structure is mostly nested but not recomputed excessively. Object comparisons are effectively bounded by key comparisons and recursive descent, so they remain proportional to the total visited nodes.
+
+For the n-gram list matcher, the cost is higher because it builds a set of n-grams for each candidate item and compares overlaps across the arrays. The matching stage has a practical complexity closer to:
+
+$$
+O(L^2 \cdot M)
+$$
+
+in the worst case, because each candidate item may be compared against many others while scoring shared n-grams, and each comparison may touch strings of length $M$.
+
+If the list length is $L$ and each string has length $M$, then building the n-gram index is roughly:
+
+$$
+O(L \cdot M)
+$$
+
+and the candidate scoring can grow toward quadratic behavior in the list size.
+
+The exact constant factors depend on the n-gram length $G$, the number of unique n-grams, and how many candidate matches survive early filtering. In real runs, it is usually closer to a “many small list comparisons” problem than a pure $O(L^2)$ worst-case scenario, but it is still the main cost driver for large arrays.
+
+### Adaptive n-gram sizing
+
+The list matcher does not use a single fixed n-gram size for the whole run. It starts with a relatively large n-gram length to find obvious matches quickly and then decreases the window size as the remaining unmatched items get smaller and harder to distinguish.
+
+The current implementation reduces the n-gram size with a logarithmic-style step:
+
+```python
+return min(int(num / 2), 128) if num > 16 else num - 1
+```
+
+This means that when the list is large, the matcher shrinks the n-gram size aggressively at first, then more gently as it approaches smaller windows. The effect is:
+
+- coarse matching early: large n-grams catch strong similarities and avoid false matches due to small shared substrings
+- finer matching later: once most obvious pairs are resolved, smaller n-grams help distinguish near-duplicates and leftover candidates
+- stable convergence: eventually the matcher reaches a point where nearly all remaining pairs can be resolved with a tighter window
+
+This adaptive behavior is useful for lists where many entries are similar but not identical. A single, fixed n-gram length can be too coarse for subtle differences or too narrow to find the right matches when the strings are highly similar but shifted. By decreasing size gradually, the algorithm gets strong matches early and then refines them only where needed.
+
+For example, consider two lists of feature names or configuration labels where the majority of items are very similar:
+
+- initial large n-grams match broad structural similarity and place items into likely candidate groups
+- smaller n-grams then separate near-duplicates that share a common base name but differ in a suffix or parameter value
+- once most pairs are matched, only a few ambiguous leftovers remain, and the smaller window resolves them precisely
+
+This is one reason the list matcher works well for reordered or slightly edited JSON arrays without reverting to a brittle index-only comparison.
+
+### Why the n-gram matcher is worth it
+
+The n-gram matcher is intentionally more expensive than a simple index-based comparison, but it is much better when arrays contain similar items that have been reordered or when list order is not a good proxy for identity. In other words, the algorithm trades additional CPU for more meaningful matches in real-world JSON payloads.
+
+This is best suited to:
+
+- configuration files and manifests
+- API payloads with nested objects and small-to-medium arrays
+- scenarios where list reordering is common but item identity should remain stable
+
+It becomes less ideal for very large arrays with highly unique items or for extremely large payloads where a faster, less semantic diff is acceptable.
+
+For small to medium JSON structures, the cost is usually low and the better match quality is worth it. For large datasets, it is best to keep arrays moderate and to scope diffs to the relevant object subsets when possible.
