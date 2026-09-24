@@ -1,9 +1,8 @@
-debug logging
 markdown output in debug logging
 cli
 ui for uploading files
 diff visualization
-readme
+readme - demo difference over other utils like https://incaseofstairs.com/jsdiff/ https://jsondiff.com/ https://semanticdiff.com/online-diff/json/
 R-shiny implementation (shinylive + webassembly)
 add support for xml and tabular datasets
 convert diff to patch file

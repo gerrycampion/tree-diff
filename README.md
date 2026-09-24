@@ -11,8 +11,8 @@ pip install tree-diff-py
 ## Development
 
 ```bash
-python -m pip install -U pip
-python -m pip install -e ".[dev]"
+python -m pip install --upgrade pip
+python -m pip install --editable ".[dev]"
 pre-commit install
 ```
 
