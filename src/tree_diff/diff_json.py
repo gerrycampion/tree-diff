@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from json import dumps
+from logging import getLogger
 from typing import Any
 
 from tree_diff.base_list_matcher import BaseListMatcher
+
+logger = getLogger(__name__)
 
 
 @dataclass
@@ -111,6 +114,9 @@ def diff_array(
     json_to_compare = _stringify(compare)
     json_base = set(json_to_base.keys())
     json_compare = set(json_to_compare.keys())
+    logger.debug("=========== Matching Lists ============")
+    logger.debug("Base: %s", base_pointer)
+    logger.debug("Compare: %s", compare_pointer)
     pairs = list_matcher.match_lists(json_base, json_compare)
     deletions: list[dict[str, Any]] = [
         {

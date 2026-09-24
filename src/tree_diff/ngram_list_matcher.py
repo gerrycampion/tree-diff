@@ -1,11 +1,11 @@
-import logging
 from collections import Counter, defaultdict
 from collections.abc import Iterable
+from logging import getLogger
 from typing import Any
 
 from tree_diff.base_list_matcher import BaseListMatcher
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def _ngrams(text: str, n: int) -> Counter[str]:
@@ -100,12 +100,12 @@ def _match_lists(
     compare: set[str],
     pairs: list[tuple[str, str]],
     ngram_len: int,
-    steps: int,
+    step: int,
 ) -> None:
-    logger.debug("===========%s============", steps)
-    logger.debug("Ngram, Base, Compare, Pairs")
-    logger.debug("Start")
-    logger.debug("%s, %s, %s, %s", ngram_len, len(base), len(compare), len(pairs))
+
+    base_before = len(base)
+    compare_before = len(compare)
+    pairs_before = len(pairs)
     string_to_ngram: dict[str, dict[str, Any]] = {}
     base_ngram_to_string: defaultdict[str, Counter[str]] = defaultdict(
         lambda: Counter()
@@ -121,8 +121,18 @@ def _match_lists(
         _find_closest_matches(b, compare_ngram_to_string, string_to_ngram)
     _intersections(string_to_ngram, base, compare, pairs, ngram_len)
     _intersections(string_to_ngram, compare, base, pairs, ngram_len)
-    logger.debug("End")
-    logger.debug("%s, %s, %s, %s", ngram_len, len(base), len(compare), len(pairs))
+
+    logger.debug(
+        "%s, %s, %s->%s, %s->%s, %s->%s",
+        step,
+        ngram_len,
+        base_before,
+        len(base),
+        compare_before,
+        len(compare),
+        pairs_before,
+        len(pairs),
+    )
 
 
 def _max_len(base: Iterable[str], compare: Iterable[str]) -> int:
@@ -138,14 +148,15 @@ def _decrement(num: int) -> int:
 class NgramListMatcher(BaseListMatcher[str]):
     @staticmethod
     def match_lists(base: set[str], compare: set[str]) -> list[tuple[str, str]]:
+        logger.debug("Step, Ngram, Base, Compare, Pairs")
         pairs: list[tuple[str, str]] = []
-        steps = 1
-        _match_lists(base, compare, pairs, 0, steps)
+        step = 1
+        _match_lists(base, compare, pairs, 0, step)
         ngram_length = _decrement(_max_len(base, compare))
         while ngram_length > 0 and base and compare:
-            steps += 1
+            step += 1
             pairs_length = len(pairs)
-            _match_lists(base, compare, pairs, ngram_length, steps)
+            _match_lists(base, compare, pairs, ngram_length, step)
             if pairs_length == len(pairs):
                 ngram_length = _decrement(min(ngram_length, _max_len(base, compare)))
         return pairs
